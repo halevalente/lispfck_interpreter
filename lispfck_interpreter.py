@@ -54,3 +54,67 @@ parser = ox.make_parser ([
   ('atom : DO', lambda x : x),
   ('atom : NUMBER', int),
 ], tokens_list)
+
+
+def lispfck_interpreter(tree, initialArray, aux):
+  loopIsActive = False
+  pos = 0
+  while pos < len(tree):
+    if isinstance(tree[pos], tuple):
+      initialArray, aux = lispfck_interpreter(tree[pos], initialArray, aux)
+    elif tree[pos] == 'inc':
+      initialArray[aux] += 1
+    elif tree[pos] == 'dec':
+      initialArray[aux] -= 1
+    elif tree[pos] == 'right':
+      aux += 1
+      if len(initialArray) - 1 < aux:
+        initialArray.append(0)
+    elif tree[pos] == 'left':
+      aux -= 1
+      if aux < 0:
+        initialArray.append(0)
+    elif tree[pos] == 'add':
+      pos += 1
+      initialArray[aux] += tree[pos]
+    elif tree[pos] == 'sub':
+      pos += 1
+      initialArray[aux] -= tree[pos]
+    elif tree[pos] == 'read':
+      initialArray[aux] = input('input: ')
+    elif tree[pos] == 'print':
+      print(chr(initialArray[aux]), end='')
+    elif tree[pos] == 'loop':
+      if initialArray[aux] == 0:
+        loopIsActive = False
+        break
+      else:
+        loopIsActive = True
+    if loopIsActive == True and pos == len(tree) - 1:
+      pos = -1
+
+    pos += 1
+
+  return initialArray, aux
+
+def evaluate(tree):
+  initialArray = [0]
+  aux = 0
+  print('\nOutput:')
+  initialArray, aux = lispfck_interpreter(tree, initialArray, aux)
+  print()
+
+@click.command()
+@click.argument('source', type=click.File('r'))
+
+def build_tree(source):
+  sourceCode = source.read()
+  tokens = lexer(sourceCode)
+  print('Tokens List:\n', tokens)
+  tree = parser(tokens)
+  print("\nSyntax Tree:")
+  pprint.pprint(tree)
+  evaluate(tree)
+
+if __name__ == '__main__':
+  build_tree()
