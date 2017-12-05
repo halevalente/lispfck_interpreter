@@ -36,3 +36,21 @@ tokens_list = [
   'DO',
   'NUMBER']
 
+parser = ox.make_parser ([
+  ('expr : LEFT_PARENTHESIS RIGHT_PARENTHESIS', lambda x,y: '()'),
+  ('expr : LEFT_PARENTHESIS term RIGHT_PARENTHESIS', lambda x,y,z: y),
+  ('term : atom term', lambda x,y: (x,) + y),
+  ('term : atom', lambda x : (x,)),
+  ('atom : expr', lambda x : x),
+  ('atom : DECREMENT', lambda x : x),
+  ('atom : INCREMENT', lambda x : x),
+  ('atom : LOOP', lambda x : x),
+  ('atom : RIGHT', lambda x : x),
+  ('atom : LEFT', lambda x : x),
+  ('atom : READ', lambda x : x),
+  ('atom : PRINT', lambda x : x),
+  ('atom : ADD', lambda x : x),
+  ('atom : SUB', lambda x : x),
+  ('atom : DO', lambda x : x),
+  ('atom : NUMBER', int),
+], tokens_list)
