@@ -15,6 +15,8 @@ lexer = ox.make_lexer ([
   ('ADD', r'add'),
   ('SUB', r'sub'),
   ('DO', r'do'),
+  ('DO_AFTER', r'do-after'),
+  ('DO_BEFORE', r'do-before'),
   ('NUMBER', r'[0-9]+'),
   ('IGNORE_COMMENT', r';[^\n]*'),
   ('IGNORE_LINE_BREAK', r'\n'),
@@ -34,6 +36,8 @@ tokens_list = [
   'ADD',
   'SUB',
   'DO',
+  'DO_AFTER',
+  'DO_BEFORE',
   'NUMBER']
 
 parser = ox.make_parser ([
@@ -52,6 +56,8 @@ parser = ox.make_parser ([
   ('atom : ADD', lambda x : x),
   ('atom : SUB', lambda x : x),
   ('atom : DO', lambda x : x),
+  ('atom : DO_AFTER', lambda x : x),
+  ('atom : DO_BEFORE', lambda x : x),
   ('atom : NUMBER', int),
 ], tokens_list)
 
@@ -84,6 +90,18 @@ def lispfck_interpreter(tree, initialArray, aux):
       initialArray[aux] = input('input: ')
     elif tree[pos] == 'print':
       print(chr(initialArray[aux]), end='')
+    elif tree[pos] == 'do-before':
+      pos += 1 # pass to command
+      command = tree[pos]
+      pos += 1 # pass to tuple
+      array = do_before(command, list(tree[pos]))
+      lispfck_interpreter(array, initialArray, aux)
+    elif tree[pos] == 'do-after':
+      pos += 1 # pass to command
+      command = tree[pos]
+      pos += 1 # pass to tuple
+      array = do_after(command, list(tree[pos]))
+      lispfck_interpreter(array, initialArray, aux)
     elif tree[pos] == 'loop':
       if initialArray[aux] == 0:
         loopIsActive = False
@@ -97,6 +115,7 @@ def lispfck_interpreter(tree, initialArray, aux):
 
   return initialArray, aux
 
+
 def evaluate(tree):
   initialArray = [0]
   aux = 0
@@ -106,6 +125,37 @@ def evaluate(tree):
 
 @click.command()
 @click.argument('source', type=click.File('r'))
+
+
+def do_before(command, previousArray):
+  actualArray = []
+  pos = 0
+  while pos < len(previousArray):
+    actualArray.append(command)
+    actualArray.append(previousArray[pos])
+    if previousArray[pos] == 'add' or previousArray[pos] == 'sub':
+      pos += 1
+      actualArray.append(previousArray[pos])
+
+    pos += 1
+
+  return actualArray
+
+
+def do_after(command, previousArray):
+  actualArray = []
+  pos = 0
+  while pos < len(previousArray):
+    if previousArray[pos] == 'add' or previousArray[pos] == 'sub':
+      actualArray.append(previousArray[pos])
+      pos += 1
+    actualArray.append(previousArray[pos])
+    actualArray.append(command)
+
+    pos += 1
+
+  return actualArray
+
 
 def build_tree(source):
   sourceCode = source.read()
